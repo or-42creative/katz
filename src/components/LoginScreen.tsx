@@ -1,11 +1,17 @@
+import Image from "next/image";
 import { signIn } from "@/auth";
 
 export function LoginScreen() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-6 text-center">
-      <div className="mb-6 grid h-20 w-20 place-items-center rounded-3xl bg-brand-600 text-4xl font-black text-white shadow-lg shadow-brand-600/20">
-        כ
-      </div>
+      <Image
+        src="/katz-logo.png"
+        alt="כץ"
+        width={256}
+        height={256}
+        priority
+        className="mb-5 h-28 w-28 rounded-full object-cover shadow-lg shadow-brand-600/20 ring-1 ring-black/5"
+      />
       <h1 className="text-4xl font-black tracking-tight text-gray-900">כץ</h1>
       <p className="mt-3 text-lg text-gray-500">
         מקצר הלינקים הפנים-ארגוני.

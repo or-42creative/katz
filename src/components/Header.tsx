@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { signOut } from "@/auth";
 
 type HeaderUser = {
@@ -13,9 +14,13 @@ export function Header({ user }: { user: HeaderUser }) {
     <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-lg font-black text-white">
-            כ
-          </span>
+          <Image
+            src="/katz-logo.png"
+            alt="כץ"
+            width={64}
+            height={64}
+            className="h-9 w-9 rounded-full object-cover ring-1 ring-black/5"
+          />
           <span className="text-xl font-black tracking-tight text-gray-900">כץ</span>
         </Link>
 
