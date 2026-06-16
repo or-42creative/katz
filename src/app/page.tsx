@@ -12,10 +12,10 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ notfound?: string; expired?: string }>;
+  searchParams: Promise<{ notfound?: string; expired?: string; disabled?: string }>;
 }) {
   const session = await auth();
-  const { notfound, expired } = await searchParams;
+  const { notfound, expired, disabled } = await searchParams;
 
   if (!session?.user?.id) {
     return <LoginScreen />;
@@ -36,6 +36,7 @@ export default async function HomePage({
     url: l.url,
     createdAt: l.createdAt.toISOString(),
     expiresAt: l.expiresAt ? l.expiresAt.toISOString() : null,
+    disabled: l.disabled,
     clicks: l._count.clicks,
   }));
 
@@ -59,6 +60,12 @@ export default async function HomePage({
         {expired && (
           <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
             הלינק <span dir="ltr" className="font-mono">/{expired}</span> פג תוקף.
+          </div>
+        )}
+
+        {disabled && (
+          <div className="mb-4 rounded-xl bg-gray-100 px-4 py-3 text-sm text-gray-600 ring-1 ring-gray-200">
+            הלינק <span dir="ltr" className="font-mono">/{disabled}</span> מושבת כרגע.
           </div>
         )}
 

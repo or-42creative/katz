@@ -279,6 +279,11 @@ export default async function LinkStatsPage({
           >
             {link.url}
           </a>
+          {link.disabled && (
+            <p className="mt-2 text-xs font-semibold text-gray-500">
+              ⏸ הלינק מושבת כרגע ואינו מפנה.
+            </p>
+          )}
           {link.expiresAt && (
             <p className="mt-2 text-xs font-medium">
               {link.expiresAt.getTime() < Date.now() ? (

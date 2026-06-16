@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { deleteLink } from "@/lib/actions";
+import { deleteLink, toggleLinkActive } from "@/lib/actions";
 import { CopyButton, ShareButton } from "@/components/ShortLinkActions";
 import { QrButton } from "@/components/QrButton";
 
@@ -12,6 +12,7 @@ export type LinkCardData = {
   url: string;
   createdAt: string;
   expiresAt: string | null;
+  disabled: boolean;
   clicks: number;
   ownerName?: string | null;
 };
@@ -28,7 +29,13 @@ export function LinkCard({
   const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md sm:p-5">
+    <div
+      className={`rounded-2xl p-4 shadow-sm ring-1 transition hover:shadow-md sm:p-5 ${
+        link.disabled
+          ? "bg-gray-50 ring-gray-200"
+          : "bg-white ring-gray-100"
+      }`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {link.title && (
@@ -41,7 +48,11 @@ export function LinkCard({
             target="_blank"
             rel="noreferrer"
             dir="ltr"
-            className="block truncate text-base font-semibold text-brand-700 hover:underline"
+            className={`block truncate text-base font-semibold hover:underline ${
+              link.disabled
+                ? "text-gray-400 line-through"
+                : "text-brand-700"
+            }`}
           >
             {shortUrl.replace(/^https?:\/\//, "")}
           </a>
@@ -74,6 +85,11 @@ export function LinkCard({
           {link.ownerName && (
             <span className="text-gray-400">· {link.ownerName}</span>
           )}
+          {link.disabled && (
+            <span className="rounded bg-gray-200 px-1.5 py-0.5 text-xs font-semibold text-gray-600">
+              מושבת
+            </span>
+          )}
           {expiresAt &&
             (isExpired ? (
               <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-600">
@@ -99,6 +115,19 @@ export function LinkCard({
           >
             ערוך
           </Link>
+          <form action={toggleLinkActive}>
+            <input type="hidden" name="id" value={link.id} />
+            <button
+              type="submit"
+              className={`font-medium ${
+                link.disabled
+                  ? "text-green-600 hover:text-green-700"
+                  : "text-gray-500 hover:text-amber-600"
+              }`}
+            >
+              {link.disabled ? "הפעל" : "השבת"}
+            </button>
+          </form>
           <form
             action={deleteLink}
             onSubmit={(e) => {

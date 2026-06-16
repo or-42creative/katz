@@ -70,6 +70,7 @@ model Link {
   ownerId   String
   createdAt DateTime  @default(now())
   expiresAt DateTime?
+  disabled  Boolean   @default(false)
 
   owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   clicks Click[]

@@ -121,6 +121,29 @@ export async function deleteLink(formData: FormData): Promise<void> {
   revalidatePath("/");
 }
 
+/** Toggles a link between active and temporarily disabled. */
+export async function toggleLinkActive(formData: FormData): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) return;
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const link = await prisma.link.findUnique({ where: { id } });
+  if (!link) return;
+
+  const isOwner = link.ownerId === session.user.id;
+  const isAdmin = session.user.role === "ADMIN";
+  if (!isOwner && !isAdmin) return;
+
+  await prisma.link.update({
+    where: { id },
+    data: { disabled: !link.disabled },
+  });
+  revalidatePath("/");
+  revalidatePath(`/link/${id}`);
+}
+
 export type UpdateLinkState = { ok: boolean; error?: string };
 
 export async function updateLink(
