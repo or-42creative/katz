@@ -4,17 +4,18 @@ import { getBaseUrl } from "@/lib/base-url";
 import { Header } from "@/components/Header";
 import { LoginScreen } from "@/components/LoginScreen";
 import { CreateLinkForm } from "@/components/CreateLinkForm";
-import { LinkCard, type LinkCardData } from "@/components/LinkCard";
+import { type LinkCardData } from "@/components/LinkCard";
+import { LinksBrowser } from "@/components/LinksBrowser";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ notfound?: string }>;
+  searchParams: Promise<{ notfound?: string; expired?: string }>;
 }) {
   const session = await auth();
-  const { notfound } = await searchParams;
+  const { notfound, expired } = await searchParams;
 
   if (!session?.user?.id) {
     return <LoginScreen />;
@@ -34,6 +35,7 @@ export default async function HomePage({
     title: l.title,
     url: l.url,
     createdAt: l.createdAt.toISOString(),
+    expiresAt: l.expiresAt ? l.expiresAt.toISOString() : null,
     clicks: l._count.clicks,
   }));
 
@@ -54,26 +56,15 @@ export default async function HomePage({
           </div>
         )}
 
+        {expired && (
+          <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+            הלינק <span dir="ltr" className="font-mono">/{expired}</span> פג תוקף.
+          </div>
+        )}
+
         <CreateLinkForm baseUrl={baseUrl} />
 
-        <section className="mt-10">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">הלינקים שלי</h2>
-            <span className="text-sm text-gray-400">{cards.length} לינקים</span>
-          </div>
-
-          {cards.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-gray-200 bg-white/50 py-12 text-center text-gray-400">
-              עדיין אין לינקים. קצרו את הראשון למעלה ☝️
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {cards.map((link) => (
-                <LinkCard key={link.id} link={link} baseUrl={baseUrl} />
-              ))}
-            </div>
-          )}
-        </section>
+        <LinksBrowser cards={cards} baseUrl={baseUrl} />
       </main>
     </>
   );

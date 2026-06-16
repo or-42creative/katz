@@ -30,6 +30,11 @@ export async function GET(
     return Response.redirect(`${origin}/?notfound=${encodeURIComponent(slug)}`, 302);
   }
 
+  if (link.expiresAt && link.expiresAt.getTime() < Date.now()) {
+    const origin = new URL(request.url).origin;
+    return Response.redirect(`${origin}/?expired=${encodeURIComponent(slug)}`, 302);
+  }
+
   const headers = request.headers;
   const referer = headers.get("referer");
 

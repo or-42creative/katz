@@ -44,6 +44,7 @@ export default async function EditLinkPage({
             slug: link.slug,
             title: link.title,
             url: link.url,
+            expiresAt: link.expiresAt ? link.expiresAt.toISOString() : null,
           }}
           baseUrl={baseUrl}
         />

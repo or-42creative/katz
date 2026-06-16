@@ -1,19 +1,37 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateLink, type UpdateLinkState } from "@/lib/actions";
 
 const initialState: UpdateLinkState = { ok: false };
 
+function isoToLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`;
+}
+
 export function EditLinkForm({
   link,
   baseUrl,
 }: {
-  link: { id: string; slug: string; title: string | null; url: string };
+  link: {
+    id: string;
+    slug: string;
+    title: string | null;
+    url: string;
+    expiresAt: string | null;
+  };
   baseUrl: string;
 }) {
   const [state, formAction, pending] = useActionState(updateLink, initialState);
+  const [expiresLocal, setExpiresLocal] = useState(() =>
+    isoToLocalInput(link.expiresAt),
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -81,6 +99,35 @@ export function EditLinkForm({
           <p className="mt-1 text-xs text-amber-600">
             ⚠️ שינוי הכתובת הקצרה ישבור לינקים שכבר שיתפת.
           </p>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold text-gray-700">
+            תוקף תפוגה
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="datetime-local"
+              value={expiresLocal}
+              onChange={(e) => setExpiresLocal(e.target.value)}
+              className="flex-1 rounded-xl border-0 bg-gray-50 px-4 py-2.5 text-gray-900 ring-1 ring-gray-200 focus:bg-white focus:ring-2 focus:ring-brand-500"
+            />
+            {expiresLocal && (
+              <button
+                type="button"
+                onClick={() => setExpiresLocal("")}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-500 ring-1 ring-gray-200 hover:bg-gray-50"
+              >
+                נקה
+              </button>
+            )}
+          </div>
+          <input
+            type="hidden"
+            name="expiresAt"
+            value={expiresLocal ? new Date(expiresLocal).toISOString() : ""}
+          />
+          <p className="mt-1 text-xs text-gray-400">ריק = ללא הגבלת זמן.</p>
         </div>
 
         {state.error && (

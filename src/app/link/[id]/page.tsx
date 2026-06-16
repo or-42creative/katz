@@ -6,6 +6,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { Header } from "@/components/Header";
 import { LoginScreen } from "@/components/LoginScreen";
 import { CopyButton } from "@/components/ShortLinkActions";
+import { QrButton } from "@/components/QrButton";
 
 export const dynamic = "force-dynamic";
 
@@ -236,12 +237,20 @@ export default async function LinkStatsPage({
           >
             → חזרה לכל הלינקים
           </Link>
-          <Link
-            href={`/link/${id}/edit`}
-            className="text-sm font-medium text-gray-500 hover:text-gray-800"
-          >
-            עריכת הלינק
-          </Link>
+          <div className="flex items-center gap-3">
+            <a
+              href={`/api/export/clicks?id=${id}`}
+              className="text-sm font-medium text-gray-500 hover:text-gray-800"
+            >
+              ⬇ ייצוא כניסות
+            </a>
+            <Link
+              href={`/link/${id}/edit`}
+              className="text-sm font-medium text-gray-500 hover:text-gray-800"
+            >
+              עריכת הלינק
+            </Link>
+          </div>
         </div>
 
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
@@ -259,6 +268,7 @@ export default async function LinkStatsPage({
               {shortUrl.replace(/^https?:\/\//, "")}
             </a>
             <CopyButton value={shortUrl} />
+            <QrButton url={shortUrl} slug={link.slug} />
           </div>
           <a
             href={link.url}
@@ -269,6 +279,19 @@ export default async function LinkStatsPage({
           >
             {link.url}
           </a>
+          {link.expiresAt && (
+            <p className="mt-2 text-xs font-medium">
+              {link.expiresAt.getTime() < Date.now() ? (
+                <span className="text-red-600">
+                  ⏱ פג תוקף ב-{link.expiresAt.toLocaleString("he-IL")}
+                </span>
+              ) : (
+                <span className="text-amber-700">
+                  ⏱ תקף עד {link.expiresAt.toLocaleString("he-IL")}
+                </span>
+              )}
+            </p>
+          )}
           {isAdmin && !isOwner && (
             <p className="mt-2 text-xs text-gray-400">
               נוצר על ידי {link.owner.name ?? link.owner.email}

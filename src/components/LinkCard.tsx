@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { deleteLink } from "@/lib/actions";
 import { CopyButton, ShareButton } from "@/components/ShortLinkActions";
+import { QrButton } from "@/components/QrButton";
 
 export type LinkCardData = {
   id: string;
@@ -10,6 +11,7 @@ export type LinkCardData = {
   title: string | null;
   url: string;
   createdAt: string;
+  expiresAt: string | null;
   clicks: number;
   ownerName?: string | null;
 };
@@ -22,6 +24,8 @@ export function LinkCard({
   baseUrl: string;
 }) {
   const shortUrl = `${baseUrl}/${link.slug}`;
+  const expiresAt = link.expiresAt ? new Date(link.expiresAt) : null;
+  const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md sm:p-5">
@@ -55,6 +59,7 @@ export function LinkCard({
         <div className="flex shrink-0 items-center gap-2">
           <CopyButton value={shortUrl} />
           <ShareButton url={shortUrl} title={link.title ?? undefined} />
+          <QrButton url={shortUrl} slug={link.slug} />
         </div>
       </div>
 
@@ -69,6 +74,16 @@ export function LinkCard({
           {link.ownerName && (
             <span className="text-gray-400">· {link.ownerName}</span>
           )}
+          {expiresAt &&
+            (isExpired ? (
+              <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-600">
+                פג תוקף
+              </span>
+            ) : (
+              <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">
+                תקף עד {expiresAt.toLocaleDateString("he-IL")}
+              </span>
+            ))}
         </div>
 
         <div className="flex items-center gap-3">

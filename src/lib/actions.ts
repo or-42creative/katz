@@ -12,6 +12,15 @@ export type CreateLinkState = {
   slug?: string;
 };
 
+/** Parses an optional expiry timestamp (ISO string) from the form. */
+function parseExpiry(formData: FormData): Date | null {
+  const raw = String(formData.get("expiresAt") ?? "").trim();
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
 /** Reads repeated customKey[]/customValue[] inputs into a list of params. */
 function readCustomParams(formData: FormData): CustomParam[] {
   const keys = formData.getAll("customKey").map((v) => String(v));
@@ -78,7 +87,13 @@ export async function createLink(
 
   try {
     await prisma.link.create({
-      data: { slug, url: destination, title, ownerId: session.user.id },
+      data: {
+        slug,
+        url: destination,
+        title,
+        ownerId: session.user.id,
+        expiresAt: parseExpiry(formData),
+      },
     });
   } catch {
     return { ok: false, error: "שמירת הלינק נכשלה, נסו שוב" };
@@ -145,7 +160,7 @@ export async function updateLink(
 
   await prisma.link.update({
     where: { id },
-    data: { title, url: destination, slug: newSlug },
+    data: { title, url: destination, slug: newSlug, expiresAt: parseExpiry(formData) },
   });
 
   revalidatePath("/");

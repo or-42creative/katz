@@ -63,12 +63,13 @@ model VerificationToken {
 }
 
 model Link {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  url       String   @db.Text
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  url       String    @db.Text
   title     String?
   ownerId   String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
 
   owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   clicks Click[]

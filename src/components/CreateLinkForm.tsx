@@ -10,6 +10,7 @@ export function CreateLinkForm({ baseUrl }: { baseUrl: string }) {
   const [state, formAction, pending] = useActionState(createLink, initialState);
   const [advanced, setAdvanced] = useState(false);
   const [customRows, setCustomRows] = useState<number[]>([]);
+  const [expiresLocal, setExpiresLocal] = useState("");
   const rowId = useRef(0);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -21,6 +22,7 @@ export function CreateLinkForm({ baseUrl }: { baseUrl: string }) {
       formRef.current?.reset();
       setAdvanced(false);
       setCustomRows([]);
+      setExpiresLocal("");
     }
   }, [state.ok]);
 
@@ -90,6 +92,26 @@ export function CreateLinkForm({ baseUrl }: { baseUrl: string }) {
               </div>
               <p className="mt-1 text-xs text-gray-400">
                 אם משאירים ריק — ניצור כתובת קצרה אוטומטית.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                תוקף תפוגה
+              </label>
+              <input
+                type="datetime-local"
+                value={expiresLocal}
+                onChange={(e) => setExpiresLocal(e.target.value)}
+                className="w-full rounded-xl border-0 bg-white px-4 py-2.5 text-gray-900 ring-1 ring-gray-200 focus:ring-2 focus:ring-brand-500"
+              />
+              <input
+                type="hidden"
+                name="expiresAt"
+                value={expiresLocal ? new Date(expiresLocal).toISOString() : ""}
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                אחרי התאריך הזה הלינק יפסיק להפנות. ריק = ללא הגבלה.
               </p>
             </div>
 
