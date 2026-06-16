@@ -78,6 +78,12 @@ export function LinkCard({
           >
             סטטיסטיקות
           </Link>
+          <Link
+            href={`/link/${link.id}/edit`}
+            className="font-medium text-gray-500 hover:text-gray-800"
+          >
+            ערוך
+          </Link>
           <form
             action={deleteLink}
             onSubmit={(e) => {

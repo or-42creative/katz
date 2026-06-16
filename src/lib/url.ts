@@ -6,11 +6,17 @@ export type UtmParams = {
   content?: string;
 };
 
+export type CustomParam = { key: string; value: string };
+
 /**
- * Normalizes a user-entered destination URL and appends UTM parameters.
+ * Normalizes a user-entered destination URL and appends UTM + custom parameters.
  * Returns the final URL string, or throws if the URL is invalid.
  */
-export function buildDestinationUrl(rawUrl: string, utm: UtmParams): string {
+export function buildDestinationUrl(
+  rawUrl: string,
+  utm: UtmParams,
+  extra: CustomParam[] = [],
+): string {
   let input = rawUrl.trim();
   if (!input) throw new Error("חסר לינק");
 
@@ -41,6 +47,12 @@ export function buildDestinationUrl(rawUrl: string, utm: UtmParams): string {
   for (const [key, value] of Object.entries(map)) {
     const v = value?.trim();
     if (v) url.searchParams.set(key, v);
+  }
+
+  for (const { key, value } of extra) {
+    const k = key?.trim();
+    const v = value?.trim();
+    if (k && v) url.searchParams.set(k, v);
   }
 
   return url.toString();

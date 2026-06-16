@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { buildDestinationUrl } from "@/lib/url";
+import { buildDestinationUrl, type CustomParam } from "@/lib/url";
 import { randomSlug, validateCustomSlug, RESERVED_SLUGS } from "@/lib/slug";
 
 export type CreateLinkState = {
@@ -11,6 +11,19 @@ export type CreateLinkState = {
   error?: string;
   slug?: string;
 };
+
+/** Reads repeated customKey[]/customValue[] inputs into a list of params. */
+function readCustomParams(formData: FormData): CustomParam[] {
+  const keys = formData.getAll("customKey").map((v) => String(v));
+  const values = formData.getAll("customValue").map((v) => String(v));
+  const out: CustomParam[] = [];
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i]?.trim();
+    const value = values[i]?.trim();
+    if (key && value) out.push({ key, value });
+  }
+  return out;
+}
 
 export async function createLink(
   _prev: CreateLinkState,
@@ -27,13 +40,17 @@ export async function createLink(
 
   let destination: string;
   try {
-    destination = buildDestinationUrl(rawUrl, {
-      source: String(formData.get("utm_source") ?? ""),
-      medium: String(formData.get("utm_medium") ?? ""),
-      campaign: String(formData.get("utm_campaign") ?? ""),
-      term: String(formData.get("utm_term") ?? ""),
-      content: String(formData.get("utm_content") ?? ""),
-    });
+    destination = buildDestinationUrl(
+      rawUrl,
+      {
+        source: String(formData.get("utm_source") ?? ""),
+        medium: String(formData.get("utm_medium") ?? ""),
+        campaign: String(formData.get("utm_campaign") ?? ""),
+        term: String(formData.get("utm_term") ?? ""),
+        content: String(formData.get("utm_content") ?? ""),
+      },
+      readCustomParams(formData),
+    );
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }
@@ -87,6 +104,53 @@ export async function deleteLink(formData: FormData): Promise<void> {
 
   await prisma.link.delete({ where: { id } });
   revalidatePath("/");
+}
+
+export type UpdateLinkState = { ok: boolean; error?: string };
+
+export async function updateLink(
+  _prev: UpdateLinkState,
+  formData: FormData,
+): Promise<UpdateLinkState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "צריך להתחבר" };
+
+  const id = String(formData.get("id") ?? "");
+  const link = await prisma.link.findUnique({ where: { id } });
+  if (!link) return { ok: false, error: "הלינק לא נמצא" };
+
+  const isOwner = link.ownerId === session.user.id;
+  const isAdmin = session.user.role === "ADMIN";
+  if (!isOwner && !isAdmin) return { ok: false, error: "אין הרשאה" };
+
+  const title = String(formData.get("title") ?? "").trim() || null;
+  const rawUrl = String(formData.get("url") ?? "");
+  const newSlug = String(formData.get("slug") ?? "").trim();
+
+  // Validate + normalize the destination URL.
+  let destination: string;
+  try {
+    destination = buildDestinationUrl(rawUrl, {});
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+
+  // Validate the slug if it changed.
+  if (newSlug !== link.slug) {
+    const err = validateCustomSlug(newSlug);
+    if (err) return { ok: false, error: err };
+    const taken = await prisma.link.findUnique({ where: { slug: newSlug } });
+    if (taken) return { ok: false, error: "הכתובת המותאמת כבר תפוסה" };
+  }
+
+  await prisma.link.update({
+    where: { id },
+    data: { title, url: destination, slug: newSlug },
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/link/${id}`);
+  return { ok: true };
 }
 
 // ===== Admin: user management =====

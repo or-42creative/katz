@@ -8,9 +8,28 @@ const heebo = Heebo({
   display: "swap",
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
 export const metadata: Metadata = {
-  title: "כץ — מקצרים לינקים",
-  description: "מקצר הלינקים הפנים-ארגוני. קצר, מהיר ופשוט.",
+  metadataBase: new URL(siteUrl),
+  title: "כץ — עושה את זה קצר",
+  description: "כץ — עושה את זה קצר. מקצר הלינקים הפנים-ארגוני.",
+  openGraph: {
+    title: "כץ — עושה את זה קצר",
+    description: "מקצר הלינקים הפנים-ארגוני.",
+    images: ["/katz-logo.png"],
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "כץ — עושה את זה קצר",
+    description: "מקצר הלינקים הפנים-ארגוני.",
+    images: ["/katz-logo.png"],
+  },
 };
 
 export default function RootLayout({

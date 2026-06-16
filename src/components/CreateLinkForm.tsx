@@ -9,6 +9,8 @@ const initialState: CreateLinkState = { ok: false };
 export function CreateLinkForm({ baseUrl }: { baseUrl: string }) {
   const [state, formAction, pending] = useActionState(createLink, initialState);
   const [advanced, setAdvanced] = useState(false);
+  const [customRows, setCustomRows] = useState<number[]>([]);
+  const rowId = useRef(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   const shortUrl = state.slug ? `${baseUrl}/${state.slug}` : "";
@@ -18,8 +20,14 @@ export function CreateLinkForm({ baseUrl }: { baseUrl: string }) {
     if (state.ok) {
       formRef.current?.reset();
       setAdvanced(false);
+      setCustomRows([]);
     }
   }, [state.ok]);
+
+  const addCustomRow = () =>
+    setCustomRows((rows) => [...rows, (rowId.current += 1)]);
+  const removeCustomRow = (id: number) =>
+    setCustomRows((rows) => rows.filter((r) => r !== id));
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 sm:p-6">
@@ -65,11 +73,11 @@ export function CreateLinkForm({ baseUrl }: { baseUrl: string }) {
               <label className="mb-1.5 block text-sm font-medium text-gray-700">
                 כתובת מותאמת אישית
               </label>
-              <div className="flex items-stretch overflow-hidden rounded-xl ring-1 ring-gray-200 focus-within:ring-2 focus-within:ring-brand-500">
-                <span
-                  dir="ltr"
-                  className="flex items-center bg-gray-100 px-3 text-sm text-gray-500"
-                >
+              <div
+                dir="ltr"
+                className="flex items-stretch overflow-hidden rounded-xl ring-1 ring-gray-200 focus-within:ring-2 focus-within:ring-brand-500"
+              >
+                <span className="flex items-center whitespace-nowrap bg-gray-100 px-3 text-sm text-gray-500">
                   {baseUrl.replace(/^https?:\/\//, "")}/
                 </span>
                 <input
@@ -77,7 +85,7 @@ export function CreateLinkForm({ baseUrl }: { baseUrl: string }) {
                   type="text"
                   dir="ltr"
                   placeholder="my-link"
-                  className="min-w-0 flex-1 border-0 bg-white px-3 py-2.5 text-gray-900 focus:outline-none"
+                  className="min-w-0 flex-1 border-0 bg-white px-3 py-2.5 text-left text-gray-900 focus:outline-none"
                 />
               </div>
               <p className="mt-1 text-xs text-gray-400">
@@ -104,6 +112,50 @@ export function CreateLinkForm({ baseUrl }: { baseUrl: string }) {
                   placeholder="banner_a"
                 />
               </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-medium text-gray-700">
+                שדות מותאמים אישית
+              </p>
+              {customRows.length > 0 && (
+                <div className="mb-2 space-y-2">
+                  {customRows.map((id) => (
+                    <div key={id} className="flex items-center gap-2">
+                      <input
+                        name="customKey"
+                        type="text"
+                        dir="ltr"
+                        placeholder="שם פרמטר (key)"
+                        className="min-w-0 flex-1 rounded-lg border-0 bg-white px-3 py-2 text-sm text-gray-900 ring-1 ring-gray-200 focus:ring-2 focus:ring-brand-500"
+                      />
+                      <span className="text-gray-400">=</span>
+                      <input
+                        name="customValue"
+                        type="text"
+                        dir="ltr"
+                        placeholder="ערך (value)"
+                        className="min-w-0 flex-1 rounded-lg border-0 bg-white px-3 py-2 text-sm text-gray-900 ring-1 ring-gray-200 focus:ring-2 focus:ring-brand-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeCustomRow(id)}
+                        aria-label="הסר שדה"
+                        className="shrink-0 rounded-lg px-2 py-1 text-gray-400 transition hover:text-red-600"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={addCustomRow}
+                className="text-sm font-medium text-brand-600 hover:text-brand-700"
+              >
+                + הוסף שדה
+              </button>
             </div>
           </div>
         )}

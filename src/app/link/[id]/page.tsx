@@ -11,13 +11,67 @@ export const dynamic = "force-dynamic";
 
 type Breakdown = { label: string; count: number };
 
+const RANGES = [
+  { key: "7d", label: "7 ימים", days: 7 },
+  { key: "30d", label: "30 יום", days: 30 },
+  { key: "90d", label: "90 יום", days: 90 },
+  { key: "all", label: "הכל", days: null },
+] as const;
+
+type RangeKey = (typeof RANGES)[number]["key"];
+
+function utcStartOfDay(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+function addDays(d: Date, n: number): Date {
+  return new Date(d.getTime() + n * 86400000);
+}
+function dayKey(d: Date): string {
+  return utcStartOfDay(d).toISOString().slice(0, 10);
+}
+
+type DayPoint = { key: string; label: string; count: number };
+
+function buildDaySeries(dates: Date[], days: number | null): DayPoint[] {
+  const end = utcStartOfDay(new Date());
+  let start: Date;
+  if (days != null) {
+    start = addDays(end, -(days - 1));
+  } else if (dates.length === 0) {
+    start = end;
+  } else {
+    const earliest = utcStartOfDay(
+      new Date(Math.min(...dates.map((d) => d.getTime()))),
+    );
+    const cap = addDays(end, -89); // show at most ~90 days on the axis
+    start = earliest.getTime() < cap.getTime() ? cap : earliest;
+  }
+
+  const counts = new Map<string, number>();
+  for (const d of dates) {
+    const k = dayKey(d);
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+
+  const series: DayPoint[] = [];
+  for (let dt = new Date(start); dt <= end; dt = addDays(dt, 1)) {
+    const k = dt.toISOString().slice(0, 10);
+    series.push({
+      key: k,
+      label: `${dt.getUTCDate()}/${dt.getUTCMonth() + 1}`,
+      count: counts.get(k) ?? 0,
+    });
+  }
+  return series;
+}
+
 function Bars({ title, rows }: { title: string; rows: Breakdown[] }) {
   const max = Math.max(1, ...rows.map((r) => r.count));
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
       <h3 className="mb-3 font-bold text-gray-900">{title}</h3>
       {rows.length === 0 ? (
-        <p className="text-sm text-gray-400">אין נתונים עדיין</p>
+        <p className="text-sm text-gray-400">אין נתונים בטווח</p>
       ) : (
         <div className="space-y-2.5">
           {rows.map((r) => (
@@ -40,15 +94,62 @@ function Bars({ title, rows }: { title: string; rows: Breakdown[] }) {
   );
 }
 
+function DayChart({ series }: { series: DayPoint[] }) {
+  const max = Math.max(1, ...series.map((s) => s.count));
+  const showLabels = series.length <= 16;
+  return (
+    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 sm:col-span-2">
+      <h3 className="mb-3 font-bold text-gray-900">כניסות לפי יום</h3>
+      {series.every((s) => s.count === 0) ? (
+        <p className="text-sm text-gray-400">אין כניסות בטווח שנבחר</p>
+      ) : (
+        <>
+          <div
+            dir="ltr"
+            className="flex h-32 items-end gap-1 border-b border-gray-100"
+          >
+            {series.map((s) => (
+              <div
+                key={s.key}
+                title={`${s.label}: ${s.count}`}
+                className="flex min-w-[6px] flex-1 items-end"
+                style={{ height: "100%" }}
+              >
+                <div
+                  className="w-full rounded-t bg-brand-500 transition-all"
+                  style={{ height: `${Math.max(s.count === 0 ? 0 : 4, (s.count / max) * 100)}%` }}
+                />
+              </div>
+            ))}
+          </div>
+          {showLabels && (
+            <div dir="ltr" className="mt-1 flex gap-1 text-[10px] text-gray-400">
+              {series.map((s) => (
+                <div key={s.key} className="min-w-[6px] flex-1 text-center">
+                  {s.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default async function LinkStatsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ range?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) return <LoginScreen />;
 
   const { id } = await params;
+  const { range: rangeParam } = await searchParams;
+
   const link = await prisma.link.findUnique({
     where: { id },
     include: { _count: { select: { clicks: true } }, owner: true },
@@ -63,32 +164,53 @@ export default async function LinkStatsPage({
   const baseUrl = await getBaseUrl();
   const shortUrl = `${baseUrl}/${link.slug}`;
 
-  const [bySource, byCountry, byDevice, recent] = await Promise.all([
+  const selectedRange: RangeKey =
+    RANGES.find((r) => r.key === rangeParam)?.key ?? "all";
+  const days = RANGES.find((r) => r.key === selectedRange)!.days;
+  const since =
+    days != null ? addDays(utcStartOfDay(new Date()), -(days - 1)) : null;
+
+  const clickWhere = {
+    linkId: id,
+    ...(since ? { createdAt: { gte: since } } : {}),
+  };
+
+  const [bySource, byCountry, byDevice, recent, clickDates] = await Promise.all([
     prisma.click.groupBy({
       by: ["source"],
-      where: { linkId: id },
+      where: clickWhere,
       _count: { _all: true },
       orderBy: { _count: { source: "desc" } },
       take: 8,
     }),
     prisma.click.groupBy({
       by: ["country"],
-      where: { linkId: id },
+      where: clickWhere,
       _count: { _all: true },
       orderBy: { _count: { country: "desc" } },
       take: 8,
     }),
     prisma.click.groupBy({
       by: ["device"],
-      where: { linkId: id },
+      where: clickWhere,
       _count: { _all: true },
     }),
     prisma.click.findMany({
-      where: { linkId: id },
+      where: clickWhere,
       orderBy: { createdAt: "desc" },
       take: 15,
     }),
+    prisma.click.findMany({
+      where: clickWhere,
+      select: { createdAt: true },
+    }),
   ]);
+
+  const totalInRange = clickDates.length;
+  const series = buildDaySeries(
+    clickDates.map((c) => c.createdAt),
+    days,
+  );
 
   const sources: Breakdown[] = bySource.map((r) => ({
     label: r.source ?? "ישיר",
@@ -107,12 +229,20 @@ export default async function LinkStatsPage({
     <>
       <Header user={session.user} />
       <main className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
-        <Link
-          href="/"
-          className="mb-4 inline-block text-sm font-medium text-brand-600 hover:text-brand-700"
-        >
-          → חזרה לכל הלינקים
-        </Link>
+        <div className="mb-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-sm font-medium text-brand-600 hover:text-brand-700"
+          >
+            → חזרה לכל הלינקים
+          </Link>
+          <Link
+            href={`/link/${id}/edit`}
+            className="text-sm font-medium text-gray-500 hover:text-gray-800"
+          >
+            עריכת הלינק
+          </Link>
+        </div>
 
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
           {link.title && (
@@ -146,13 +276,33 @@ export default async function LinkStatsPage({
           )}
         </div>
 
-        <div className="my-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Stat label="סה״כ כניסות" value={link._count.clicks} />
+        {/* Date range filter */}
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <span className="text-sm text-gray-500">טווח תאריכים:</span>
+          {RANGES.map((r) => (
+            <Link
+              key={r.key}
+              href={`/link/${id}?range=${r.key}`}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                selectedRange === r.key
+                  ? "bg-brand-600 text-white"
+                  : "bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              {r.label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="my-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="כניסות בטווח" value={totalInRange} />
+          <Stat label="סה״כ אי-פעם" value={link._count.clicks} />
           <Stat label="מקורות" value={sources.length} />
           <Stat label="מדינות" value={countries.length} />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <DayChart series={series} />
           <Bars title="מאיפה הגיעו" rows={sources} />
           <Bars title="מדינות" rows={countries} />
           <Bars title="סוג מכשיר" rows={devices} />
@@ -160,7 +310,7 @@ export default async function LinkStatsPage({
           <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
             <h3 className="mb-3 font-bold text-gray-900">כניסות אחרונות</h3>
             {recent.length === 0 ? (
-              <p className="text-sm text-gray-400">אין נתונים עדיין</p>
+              <p className="text-sm text-gray-400">אין נתונים בטווח</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {recent.map((c) => (
