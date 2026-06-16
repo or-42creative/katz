@@ -3,7 +3,7 @@
 אפליקציה פשוטה לקיצור לינקים עם מעקב כניסות, בנויה ב-Next.js + Auth.js (כניסה עם Google) + Prisma + PostgreSQL, ומיועדת לפריסה ב-Vercel.
 
 **יכולות:**
-- ✂️ קיצור לינק ארוך לכתובת קצרה (`katz.vercel.app/abc1234`)
+- ✂️ קיצור לינק ארוך לכתובת קצרה (`katz.wtf/abc1234`)
 - 🎯 בניית קידוד קמפיין (פרמטרי UTM) — לא חובה
 - 🔗 כתובת מותאמת אישית — לא חובה
 - 📊 מעקב בסיסי: כמות כניסות, מקור (referer), מדינה, סוג מכשיר
@@ -65,10 +65,13 @@ npm run dev               # http://localhost:3000
    ```
    (או הוסיפו את הצעד הזה ל-build pipeline).
 
-### 4. דומיין מותאם (לא חובה)
-ב-Vercel: **Settings → Domains** — הוסיפו `katz.yourdomain.com` או השתמשו בכתובת `*.vercel.app`.
+### 4. דומיין מותאם
+האפליקציה רצה על **https://katz.wtf**. ב-Vercel: **Settings → Domains** — הוסיפו `katz.wtf`,
+והגדירו ב-DNS אצל רשם הדומיין את הרשומות ש-Vercel מציג (A record לאפקס / CNAME ל-www).
 
-> ⚠️ אחרי שמוסיפים דומיין, עדכנו את ה-redirect URI ב-Google כך שיתאים לדומיין החדש.
+> ⚠️ אחרי שמוסיפים דומיין, עדכנו את ה-redirect URI ב-Google:
+> `https://katz.wtf/api/auth/callback/google`
+> וכדאי גם להגדיר ב-Vercel את משתנה הסביבה `NEXT_PUBLIC_SITE_URL=https://katz.wtf`.
 
 ---
 
