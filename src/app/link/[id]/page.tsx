@@ -107,26 +107,29 @@ function DayChart({ series }: { series: DayPoint[] }) {
         <>
           <div
             dir="ltr"
-            className="flex h-32 items-end gap-1 border-b border-gray-100"
+            className="flex h-32 items-end gap-px overflow-hidden border-b border-gray-100"
           >
             {series.map((s) => (
               <div
                 key={s.key}
                 title={`${s.label}: ${s.count}`}
-                className="flex min-w-[6px] flex-1 items-end"
+                className="flex min-w-0 flex-1 items-end"
                 style={{ height: "100%" }}
               >
                 <div
                   className="w-full rounded-t bg-brand-500 transition-all"
-                  style={{ height: `${Math.max(s.count === 0 ? 0 : 4, (s.count / max) * 100)}%` }}
+                  style={{ height: `${s.count === 0 ? 0 : Math.max(4, (s.count / max) * 100)}%` }}
                 />
               </div>
             ))}
           </div>
           {showLabels && (
-            <div dir="ltr" className="mt-1 flex gap-1 text-[10px] text-gray-400">
+            <div
+              dir="ltr"
+              className="mt-1 flex gap-px overflow-hidden text-[10px] text-gray-400"
+            >
               {series.map((s) => (
-                <div key={s.key} className="min-w-[6px] flex-1 text-center">
+                <div key={s.key} className="min-w-0 flex-1 text-center">
                   {s.label}
                 </div>
               ))}
