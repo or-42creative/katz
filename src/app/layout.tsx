@@ -19,14 +19,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "כץ — עושה את זה קצר",
     description: "מקצר הלינקים הפנים-ארגוני.",
-    images: ["/katz-logo.png"],
     type: "website",
   },
   twitter: {
     card: "summary",
     title: "כץ — עושה את זה קצר",
     description: "מקצר הלינקים הפנים-ארגוני.",
-    images: ["/katz-logo.png"],
   },
 };
 
